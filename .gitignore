@@ -1,0 +1,100 @@
+# Delphi/Pascal .gitignore
+
+# Compiled Object files
+*.o
+*.obj
+*.dcpil
+*.bpl
+*.dcp
+
+# Executable files
+*.exe
+*.dll
+*.msi
+*.app
+
+# Unit compiled files  
+*.dcu
+*.dpu
+*.ppupu
+
+# Binary files
+*.res
+*.tlb
+*.idx
+*.gid
+
+# Project files that should be ignored
+*.local
+*.identcache
+*.tvsconfig
+*.dsm
+*.dproj.local
+*.cfg
+*.log
+*.tmp
+
+# History files
+__history/
+__recovery/
+
+# IDE specific files
+*.dsw
+*.dsk
+*.ddp
+*.opt
+*.bdsproj.local
+*.groupproj.local
+
+# Debug and temp files
+Debug/
+Release/
+Win32/
+Win64/
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.~*
+*.bak
+*.$$$
+
+# External dependencies
+lib/
+bin/
+
+# Log files
+*.log
+
+# Coverage reports
+coverage/
+
+# Documentation generated files
+doc/html/
+doc/latex/
+
+# JetBrains IDEs
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Temporary files
+temp/
+tmp/
+
+# Database files (if using local databases)
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration files with sensitive data
+config/*.ini
+config/*.cfg
+settings.ini
+
+# Specific to this project
+Server/OrionSoftServer.exe
+Server/OrionSoftServerTests.exe
+Tests/bin/
+Tests/lib/
