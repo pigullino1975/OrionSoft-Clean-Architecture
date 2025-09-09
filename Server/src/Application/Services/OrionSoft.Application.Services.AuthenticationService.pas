@@ -116,7 +116,8 @@ implementation
 uses
   System.Hash,
   System.DateUtils,
-  System.StrUtils;
+  System.StrUtils,
+  Winapi.Windows;
 
 { TLoginRequest }
 
@@ -200,7 +201,7 @@ begin
     raise EArgumentException.Create('Container cannot be nil');
     
   FContainer := Container;
-  FLogger := FContainer.Resolve<ILogger>();
+  FLogger := FContainer.ResolveLogger();
   FSessions := TDictionary<string, string>.Create;
   
   InitializeSystemConfig;
@@ -216,7 +217,7 @@ end;
 
 function TAuthenticationService.GetUserRepository: IUserRepository;
 begin
-  Result := FContainer.Resolve<IUserRepository>();
+  Result := FContainer.ResolveUserRepository();
 end;
 
 function TAuthenticationService.CreateAuthenticateUserUseCase: TAuthenticateUserUseCase;
@@ -530,10 +531,12 @@ begin
   begin
     C := Password[I];
     
-    if C.IsLower then HasLower := True
-    else if C.IsUpper then HasUpper := True
-    else if C.IsDigit then HasNumber := True
-    else if C.IsPunctuation or C.IsSymbol then HasSpecial := True;
+    if (C >= 'a') and (C <= 'z') then HasLower := True
+    else if (C >= 'A') and (C <= 'Z') then HasUpper := True
+    else if (C >= '0') and (C <= '9') then HasNumber := True
+    else if not ((C >= 'a') and (C <= 'z')) and 
+            not ((C >= 'A') and (C <= 'Z')) and 
+            not ((C >= '0') and (C <= '9')) then HasSpecial := True;
   end;
   
   // Requiere al menos 3 de los 4 tipos de caracteres

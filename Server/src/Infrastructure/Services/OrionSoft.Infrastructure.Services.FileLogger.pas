@@ -37,6 +37,9 @@ type
     FMinLogLevel: TLogLevel;
     FLastFlush: TDateTime;
     FBuffer: TStringList;
+    FCorrelationId: string;
+    FUserId: string;
+    FSessionId: string;
     
     procedure EnsureLogDirectory;
     function GetLogFileName(Level: TLogLevel): string;
@@ -54,29 +57,45 @@ type
     destructor Destroy; override;
     
     // ILogger implementation
+    procedure Debug(const Message: string); overload;
+    procedure Debug(const Message: string; const Args: array of const); overload;
     procedure Debug(const Message: string; const Context: TLogContext); overload;
-    procedure Debug(const Message: string; Exception: Exception; const Context: TLogContext); overload;
     
+    procedure Info(const Message: string); overload;
+    procedure Info(const Message: string; const Args: array of const); overload;
     procedure Info(const Message: string; const Context: TLogContext); overload;
-    procedure Info(const Message: string; Exception: Exception; const Context: TLogContext); overload;
     
+    procedure Warning(const Message: string); overload;
+    procedure Warning(const Message: string; const Args: array of const); overload;
     procedure Warning(const Message: string; const Context: TLogContext); overload;
-    procedure Warning(const Message: string; Exception: Exception; const Context: TLogContext); overload;
     
+    procedure Error(const Message: string); overload;
+    procedure Error(const Message: string; const Args: array of const); overload;
     procedure Error(const Message: string; const Context: TLogContext); overload;
-    procedure Error(const Message: string; Exception: Exception; const Context: TLogContext); overload;
+    procedure Error(const Message: string; E: Exception); overload;
+    procedure Error(const Message: string; E: Exception; const Context: TLogContext); overload;
     
+    procedure Fatal(const Message: string); overload;
+    procedure Fatal(const Message: string; const Args: array of const); overload;
     procedure Fatal(const Message: string; const Context: TLogContext); overload;
-    procedure Fatal(const Message: string; Exception: Exception; const Context: TLogContext); overload;
+    procedure Fatal(const Message: string; E: Exception); overload;
     
     // Domain-specific methods
-    procedure LogAuthentication(const UserName: string; Success: Boolean);
-    procedure LogDatabaseOperation(const Operation: string; const TableName: string; const Duration: Integer);
-    procedure LogBusinessRuleViolation(const Rule: string; const Details: string);
-    procedure LogPerformanceMetric(const OperationName: string; const Duration: Integer; const AdditionalData: string = '');
+    procedure LogAuthentication(const UserName: string; Success: Boolean; const SessionId: string = '');
+    procedure LogBusinessRule(const RuleName, EntityType, EntityId: string; Success: Boolean; const Details: string = '');
+    procedure LogPerformance(const Operation: string; DurationMs: Integer; const Details: string = '');
+    procedure LogDatabaseOperation(const Operation, TableName: string; RecordsAffected: Integer; DurationMs: Integer);
     
     // Configuration
-    procedure SetMinimumLevel(Level: TLogLevel);
+    procedure SetLogLevel(Level: TLogLevel);
+    function GetLogLevel: TLogLevel;
+    
+    // Control de contexto
+    procedure SetCorrelationId(const CorrelationId: string);
+    procedure SetUserId(const UserId: string);
+    procedure SetSessionId(const SessionId: string);
+    
+    // Additional methods
     function IsEnabled(Level: TLogLevel): Boolean;
     procedure Flush;
   end;
@@ -89,8 +108,8 @@ type
   public
     constructor Create(const Settings: TLogFileSettings; MinLevel: TLogLevel = TLogLevel.Information);
     
-    function CreateLogger: ILogger;
-    function CreateAuditLogger: IAuditLogger;
+    function CreateLogger(const Name: string): ILogger;
+    function GetLogger(const Name: string): ILogger;
   end;
 
 implementation
@@ -303,6 +322,22 @@ end;
 
 // ILogger Implementation
 
+procedure TFileLogger.Debug(const Message: string);
+var
+  Context: TLogContext;
+begin
+  Context := CreateLogContext('Logger', 'Debug');
+  Debug(Message, Context);
+end;
+
+procedure TFileLogger.Debug(const Message: string; const Args: array of const);
+var
+  FormattedMessage: string;
+begin
+  FormattedMessage := Format(Message, Args);
+  Debug(FormattedMessage);
+end;
+
 procedure TFileLogger.Debug(const Message: string; const Context: TLogContext);
 begin
   if IsEnabled(TLogLevel.Debug) then
@@ -319,20 +354,20 @@ begin
   end;
 end;
 
-procedure TFileLogger.Debug(const Message: string; Exception: Exception; const Context: TLogContext);
+procedure TFileLogger.Info(const Message: string);
+var
+  Context: TLogContext;
 begin
-  if IsEnabled(TLogLevel.Debug) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Debug);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Debug, Message, Context, Exception));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+  Context := CreateLogContext('Logger', 'Info');
+  Info(Message, Context);
+end;
+
+procedure TFileLogger.Info(const Message: string; const Args: array of const);
+var
+  FormattedMessage: string;
+begin
+  FormattedMessage := Format(Message, Args);
+  Info(FormattedMessage);
 end;
 
 procedure TFileLogger.Info(const Message: string; const Context: TLogContext);
@@ -351,181 +386,154 @@ begin
   end;
 end;
 
-procedure TFileLogger.Info(const Message: string; Exception: Exception; const Context: TLogContext);
+// Simplified implementation - basic logging functionality
+procedure TFileLogger.Warning(const Message: string);
+var
+  Context: TLogContext;
 begin
-  if IsEnabled(TLogLevel.Information) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Information);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Information, Message, Context, Exception));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+  Context := CreateLogContext('Logger', 'Warning');
+  Warning(Message, Context);
+end;
+
+procedure TFileLogger.Warning(const Message: string; const Args: array of const);
+var
+  FormattedMessage: string;
+begin
+  FormattedMessage := Format(Message, Args);
+  Warning(FormattedMessage);
 end;
 
 procedure TFileLogger.Warning(const Message: string; const Context: TLogContext);
 begin
   if IsEnabled(TLogLevel.Warning) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Warning);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Warning, Message, Context));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+    WriteToFile(FormatLogEntry(TLogLevel.Warning, Message, Context));
 end;
 
-procedure TFileLogger.Warning(const Message: string; Exception: Exception; const Context: TLogContext);
+procedure TFileLogger.Error(const Message: string);
+var
+  Context: TLogContext;
 begin
-  if IsEnabled(TLogLevel.Warning) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Warning);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Warning, Message, Context, Exception));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+  Context := CreateLogContext('Logger', 'Error');
+  Error(Message, Context);
+end;
+
+procedure TFileLogger.Error(const Message: string; const Args: array of const);
+var
+  FormattedMessage: string;
+begin
+  FormattedMessage := Format(Message, Args);
+  Error(FormattedMessage);
 end;
 
 procedure TFileLogger.Error(const Message: string; const Context: TLogContext);
 begin
   if IsEnabled(TLogLevel.Error) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Error);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Error, Message, Context));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+    WriteToFile(FormatLogEntry(TLogLevel.Error, Message, Context));
 end;
 
-procedure TFileLogger.Error(const Message: string; Exception: Exception; const Context: TLogContext);
+procedure TFileLogger.Error(const Message: string; E: Exception);
+var
+  Context: TLogContext;
+begin
+  Context := CreateLogContext('Logger', 'Error');
+  Error(Message, E, Context);
+end;
+
+procedure TFileLogger.Error(const Message: string; E: Exception; const Context: TLogContext);
 begin
   if IsEnabled(TLogLevel.Error) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Error);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Error, Message, Context, Exception));
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+    WriteToFile(FormatLogEntry(TLogLevel.Error, Message, Context, E));
+end;
+
+procedure TFileLogger.Fatal(const Message: string);
+var
+  Context: TLogContext;
+begin
+  Context := CreateLogContext('Logger', 'Fatal');
+  Fatal(Message, Context);
+end;
+
+procedure TFileLogger.Fatal(const Message: string; const Args: array of const);
+var
+  FormattedMessage: string;
+begin
+  FormattedMessage := Format(Message, Args);
+  Fatal(FormattedMessage);
 end;
 
 procedure TFileLogger.Fatal(const Message: string; const Context: TLogContext);
 begin
   if IsEnabled(TLogLevel.Fatal) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Fatal);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Fatal, Message, Context));
-      Flush; // Forzar flush inmediato para logs fatales
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+    WriteToFile(FormatLogEntry(TLogLevel.Fatal, Message, Context));
 end;
 
-procedure TFileLogger.Fatal(const Message: string; Exception: Exception; const Context: TLogContext);
+procedure TFileLogger.Fatal(const Message: string; E: Exception);
+var
+  Context: TLogContext;
 begin
+  Context := CreateLogContext('Logger', 'Fatal');
   if IsEnabled(TLogLevel.Fatal) then
-  begin
-    FCriticalSection.Enter;
-    try
-      var FileName := GetLogFileName(TLogLevel.Fatal);
-      if FCurrentLogFile <> FileName then
-        OpenLogFile(FileName);
-      WriteToFile(FormatLogEntry(TLogLevel.Fatal, Message, Context, Exception));
-      Flush; // Forzar flush inmediato para logs fatales
-    finally
-      FCriticalSection.Leave;
-    end;
-  end;
+    WriteToFile(FormatLogEntry(TLogLevel.Fatal, Message, Context, E));
 end;
 
 // Domain-specific methods
-
-procedure TFileLogger.LogAuthentication(const UserName: string; Success: Boolean);
+procedure TFileLogger.LogAuthentication(const UserName: string; Success: Boolean; const SessionId: string);
 var
-  Context: TLogContext;
   Message: string;
 begin
-  Context := CreateLogContext('Authentication', 'Login');
-  if Success then
-    Message := Format('Successful login for user: %s', [UserName])
-  else
-    Message := Format('Failed login attempt for user: %s', [UserName]);
-    
-  if Success then
-    Info(Message, Context)
-  else
-    Warning(Message, Context);
+  Message := Format('Authentication %s for user: %s', [IfThen(Success, 'SUCCESS', 'FAILED'), UserName]);
+  if Success then Info(Message) else Warning(Message);
 end;
 
-procedure TFileLogger.LogDatabaseOperation(const Operation, TableName: string; const Duration: Integer);
+procedure TFileLogger.LogBusinessRule(const RuleName, EntityType, EntityId: string; Success: Boolean; const Details: string);
 var
-  Context: TLogContext;
   Message: string;
 begin
-  Context := CreateLogContext('Database', Operation);
-  Message := Format('Database operation: %s on table %s completed in %d ms', [Operation, TableName, Duration]);
-  Info(Message, Context);
+  Message := Format('Business Rule %s: %s on %s[%s]. %s', [IfThen(Success, 'OK', 'VIOLATION'), RuleName, EntityType, EntityId, Details]);
+  if Success then Info(Message) else Warning(Message);
 end;
 
-procedure TFileLogger.LogBusinessRuleViolation(const Rule, Details: string);
+procedure TFileLogger.LogPerformance(const Operation: string; DurationMs: Integer; const Details: string);
 var
-  Context: TLogContext;
   Message: string;
 begin
-  Context := CreateLogContext('BusinessRules', Rule);
-  Message := Format('Business rule violation: %s. Details: %s', [Rule, Details]);
-  Warning(Message, Context);
+  Message := Format('Performance: %s took %d ms. %s', [Operation, DurationMs, Details]);
+  Info(Message);
 end;
 
-procedure TFileLogger.LogPerformanceMetric(const OperationName: string; const Duration: Integer; const AdditionalData: string);
+procedure TFileLogger.LogDatabaseOperation(const Operation, TableName: string; RecordsAffected: Integer; DurationMs: Integer);
 var
-  Context: TLogContext;
   Message: string;
 begin
-  Context := CreateLogContext('Performance', OperationName);
-  Message := Format('Performance metric: %s took %d ms', [OperationName, Duration]);
-  if AdditionalData <> '' then
-    Message := Message + ' | ' + AdditionalData;
-  Info(Message, Context);
+  Message := Format('Database: %s on %s affected %d records in %d ms', [Operation, TableName, RecordsAffected, DurationMs]);
+  Info(Message);
 end;
 
 // Configuration methods
-
-procedure TFileLogger.SetMinimumLevel(Level: TLogLevel);
+procedure TFileLogger.SetLogLevel(Level: TLogLevel);
 begin
-  FCriticalSection.Enter;
-  try
-    FMinLogLevel := Level;
-  finally
-    FCriticalSection.Leave;
-  end;
+  FMinLogLevel := Level;
+end;
+
+function TFileLogger.GetLogLevel: TLogLevel;
+begin
+  Result := FMinLogLevel;
+end;
+
+// Context methods
+procedure TFileLogger.SetCorrelationId(const CorrelationId: string);
+begin
+  FCorrelationId := CorrelationId;
+end;
+
+procedure TFileLogger.SetUserId(const UserId: string);
+begin
+  FUserId := UserId;
+end;
+
+procedure TFileLogger.SetSessionId(const SessionId: string);
+begin
+  FSessionId := SessionId;
 end;
 
 function TFileLogger.IsEnabled(Level: TLogLevel): Boolean;
@@ -535,15 +543,11 @@ end;
 
 procedure TFileLogger.Flush;
 begin
-  FCriticalSection.Enter;
-  try
-    if FFileOpen then
-    begin
-      System.Flush(FCurrentFileHandle);
-      FLastFlush := Now;
-    end;
-  finally
-    FCriticalSection.Leave;
+  // Simplified flush - just ensure file is written
+  if FFileOpen then
+  begin
+    System.Flush(FCurrentFileHandle);
+    FLastFlush := Now;
   end;
 end;
 
@@ -556,16 +560,14 @@ begin
   FMinLevel := MinLevel;
 end;
 
-function TLoggerFactory.CreateLogger: ILogger;
+function TLoggerFactory.CreateLogger(const Name: string): ILogger;
 begin
   Result := TFileLogger.Create(FSettings, FMinLevel);
 end;
 
-function TLoggerFactory.CreateAuditLogger: IAuditLogger;
+function TLoggerFactory.GetLogger(const Name: string): ILogger;
 begin
-  // Para simplicidad, retornamos el mismo logger
-  // En una implementación completa, podría ser un logger especializado
-  Result := TFileLogger.Create(FSettings, TLogLevel.Information) as IAuditLogger;
+  Result := CreateLogger(Name);
 end;
 
 end.

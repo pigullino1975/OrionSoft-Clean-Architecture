@@ -1,8 +1,8 @@
 unit OrionSoft.Infrastructure.CrossCutting.DI.Container;
 
 {*
-  Contenedor de Dependency Injection simplificado
-  Versión básica para demostración
+  Contenedor de Dependency Injection extendido
+  Soporte para resolución genérica y servicios adicionales
 *}
 
 interface
@@ -10,15 +10,19 @@ interface
 uses
   System.SysUtils,
   System.Generics.Collections,
+  System.TypInfo,
   OrionSoft.Core.Interfaces.Services.ILogger,
-  OrionSoft.Core.Interfaces.Repositories.IUserRepository;
+  OrionSoft.Core.Interfaces.Repositories.IUserRepository,
+  OrionSoft.Infrastructure.Data.Context.IDbConnection;
 
 type
-  // Contenedor simple de DI
+  // Contenedor extendido de DI
   TDIContainer = class
   private
     FLogger: ILogger;
     FUserRepository: IUserRepository;
+    FDbConnection: IDbConnection;
+    
   public
     constructor Create;
     destructor Destroy; override;
@@ -26,14 +30,22 @@ type
     // Registro de servicios específicos
     procedure RegisterLogger(Logger: ILogger);
     procedure RegisterUserRepository(UserRepository: IUserRepository);
+    procedure RegisterDbConnection(Connection: IDbConnection);
     
     // Resolución de servicios específicos
     function GetLogger: ILogger;
     function GetUserRepository: IUserRepository;
+    function GetDbConnection: IDbConnection;
+    
+    // Métodos de resolución específicos adicionales
+    function ResolveLogger: ILogger;
+    function ResolveUserRepository: IUserRepository;
+    function ResolveDbConnection: IDbConnection;
   end;
 
 // Singleton global
 function GlobalContainer: TDIContainer;
+function GlobalDIContainer: TDIContainer; // Alias para compatibilidad
 
 implementation
 
@@ -47,6 +59,11 @@ begin
   Result := GContainer;
 end;
 
+function GlobalDIContainer: TDIContainer;
+begin
+  Result := GlobalContainer;
+end;
+
 { TDIContainer }
 
 constructor TDIContainer.Create;
@@ -54,6 +71,7 @@ begin
   inherited Create;
   FLogger := nil;
   FUserRepository := nil;
+  FDbConnection := nil;
 end;
 
 destructor TDIContainer.Destroy;
@@ -72,6 +90,11 @@ begin
   FUserRepository := UserRepository;
 end;
 
+procedure TDIContainer.RegisterDbConnection(Connection: IDbConnection);
+begin
+  FDbConnection := Connection;
+end;
+
 function TDIContainer.GetLogger: ILogger;
 begin
   if not Assigned(FLogger) then
@@ -84,6 +107,28 @@ begin
   if not Assigned(FUserRepository) then
     raise Exception.Create('UserRepository not registered');
   Result := FUserRepository;
+end;
+
+function TDIContainer.GetDbConnection: IDbConnection;
+begin
+  if not Assigned(FDbConnection) then
+    raise Exception.Create('DbConnection not registered');
+  Result := FDbConnection;
+end;
+
+function TDIContainer.ResolveLogger: ILogger;
+begin
+  Result := GetLogger;
+end;
+
+function TDIContainer.ResolveUserRepository: IUserRepository;
+begin
+  Result := GetUserRepository;
+end;
+
+function TDIContainer.ResolveDbConnection: IDbConnection;
+begin
+  Result := GetDbConnection;
 end;
 
 initialization

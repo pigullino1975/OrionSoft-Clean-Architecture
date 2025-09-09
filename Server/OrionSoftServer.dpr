@@ -7,15 +7,28 @@ program OrionSoftServer;
 uses
   System.SysUtils,
   System.Classes,
-  // Core Units
-  OrionSoft.Core.Common.Types in 'src\Core\Common\OrionSoft.Core.Common.Types.pas',
-  OrionSoft.Core.Common.Exceptions in 'src\Core\Common\OrionSoft.Core.Common.Exceptions.pas',
-  OrionSoft.Core.Entities.User in 'src\Core\Entities\OrionSoft.Core.Entities.User.pas',
-  OrionSoft.Core.Interfaces.Services.ILogger in 'src\Core\Interfaces\Services\OrionSoft.Core.Interfaces.Services.ILogger.pas',
-  OrionSoft.Core.Interfaces.Repositories.IUserRepository in 'src\Core\Interfaces\Repositories\OrionSoft.Core.Interfaces.Repositories.IUserRepository.pas',
-  // Infrastructure Layer
-  OrionSoft.Infrastructure.CrossCutting.DI.Container in 'src\Infrastructure\CrossCutting\DI\OrionSoft.Infrastructure.CrossCutting.DI.Container.pas',
-  OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository in 'src\Infrastructure\Data\Repositories\OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository.pas';
+  System.Hash,
+  // Core Units - Common
+  OrionSoft.Core.Common.Types in 'src\\Core\\Common\\OrionSoft.Core.Common.Types.pas',
+  OrionSoft.Core.Common.Exceptions in 'src\\Core\\Common\\OrionSoft.Core.Common.Exceptions.pas',
+  // Core Units - Entities
+  OrionSoft.Core.Entities.User in 'src\\Core\\Entities\\OrionSoft.Core.Entities.User.pas',
+  // Core Units - Interfaces
+  OrionSoft.Core.Interfaces.Services.ILogger in 'src\\Core\\Interfaces\\Services\\OrionSoft.Core.Interfaces.Services.ILogger.pas',
+  OrionSoft.Core.Interfaces.Repositories.IUserRepository in 'src\\Core\\Interfaces\\Repositories\\OrionSoft.Core.Interfaces.Repositories.IUserRepository.pas',
+  // Core Units - Use Cases
+  OrionSoft.Core.UseCases.Authentication.AuthenticateUserUseCase in 'src\\Core\\UseCases\\Authentication\\OrionSoft.Core.UseCases.Authentication.AuthenticateUserUseCase.pas',
+  // Application Layer
+  OrionSoft.Application.Services.AuthenticationService in 'src\\Application\\Services\\OrionSoft.Application.Services.AuthenticationService.pas',
+  // Infrastructure Layer - DI
+  OrionSoft.Infrastructure.CrossCutting.DI.Container in 'src\\Infrastructure\\CrossCutting\\DI\\OrionSoft.Infrastructure.CrossCutting.DI.Container.pas',
+  // Infrastructure Layer - Data Context  
+  OrionSoft.Infrastructure.Data.Context.IDbConnection in 'src\\Infrastructure\\Data\\Context\\OrionSoft.Infrastructure.Data.Context.IDbConnection.pas',
+  // Infrastructure Layer - Repositories
+  OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository in 'src\\Infrastructure\\Data\\Repositories\\OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository.pas',
+  OrionSoft.Infrastructure.Data.Repositories.SqlUserRepository in 'src\\Infrastructure\\Data\\Repositories\\OrionSoft.Infrastructure.Data.Repositories.SqlUserRepository.pas',
+  // Infrastructure Layer - Services
+  OrionSoft.Infrastructure.Services.FileLogger in 'src\\Infrastructure\\Services\\OrionSoft.Infrastructure.Services.FileLogger.pas';
 
 // Mock logger simple
 type
@@ -97,7 +110,10 @@ procedure RunDemo(Container: TDIContainer);
 var
   UserRepo: IUserRepository;
   Logger: ILogger;
+  AuthService: TAuthenticationService;
   User: TUser;
+  LoginRequest: TLoginRequest;
+  AuthResult: TAuthenticationResult;
 begin
   Logger := Container.GetLogger;
   UserRepo := Container.GetUserRepository;
@@ -106,11 +122,12 @@ begin
   
   try
     // Mostrar usuarios del sistema
-    Writeln('=== DEMO: Sistema de usuarios OrionSoft ===');
-    Writeln('Clean Architecture con Delphi');
+    Writeln('=== DEMO: Sistema de usuarios OrionSoft - Clean Architecture ===');
+    Writeln('Delphi 12 Athens - Clean Architecture Pattern');
     Writeln;
     
-    // Probar obtener usuario
+    // Probar obtener usuario directamente del repositorio
+    Writeln('--- Acceso directo al repositorio ---');
     User := UserRepo.GetByUserName('admin');
     if Assigned(User) then
     begin
@@ -119,6 +136,7 @@ begin
       Writeln('  - Email: ', User.Email);
       Writeln('  - Rol: ', UserRoleToString(User.Role));
       Writeln('  - Activo: ', BoolToStr(User.IsActive, True));
+      Writeln('  - Puede hacer login: ', BoolToStr(User.CanLogin, True));
       User.Free;
     end
     else
@@ -126,20 +144,57 @@ begin
     
     Writeln;
     
+    // Probar AuthenticationService (Clean Architecture)
+    Writeln('--- Prueba de AuthenticationService (Clean Architecture) ---');
+    AuthService := TAuthenticationService.Create(Container);
+    try
+      // Crear request de login
+      LoginRequest := TLoginRequest.Create('admin', '123456', False, 'Demo Client');
+      
+      Writeln('Intentando login con usuario: admin / 123456');
+      AuthResult := AuthService.Login(LoginRequest);
+      
+      if AuthResult.Success then
+      begin
+        Writeln('✓ Login exitoso!');
+        Writeln('  - Usuario: ', AuthResult.User.UserName);
+        Writeln('  - Rol: ', UserRoleToString(AuthResult.User.Role));
+        Writeln('  - SessionId: ', Copy(AuthResult.SessionId, 1, 20), '...');
+        Writeln('  - Requiere cambio contraseña: ', BoolToStr(AuthResult.RequiresPasswordChange, True));
+        
+        // Probar validación de sesión
+        Writeln('  - Sesión válida: ', BoolToStr(AuthService.ValidateSession(AuthResult.SessionId), True));
+      end
+      else
+      begin
+        Writeln('✗ Login fallido: ', AuthResult.ErrorMessage);
+      end;
+      
+      // Limpiar recursos
+      AuthResult.Free;
+      
+    finally
+      AuthService.Free;
+    end;
+    
+    Writeln;
+    
     // Mostrar estadísticas básicas
-    Writeln('=== ESTADÍSTICAS DEL REPOSITORIO ===');
+    Writeln('--- Estadísticas del repositorio ---');
     Writeln('Total de usuarios: ', UserRepo.GetTotalCount);
     Writeln('Usuarios activos: ', UserRepo.GetActiveCount);
     Writeln('Administradores: ', UserRepo.GetCountByRole(TUserRole.Administrator));
     Writeln('Managers: ', UserRepo.GetCountByRole(TUserRole.Manager));
-    Writeln('Usuarios: ', UserRepo.GetCountByRole(TUserRole.User));
+    Writeln('Usuarios regulares: ', UserRepo.GetCountByRole(TUserRole.User));
     
+    Writeln;
     Logger.Info('Demostración completada exitosamente');
     
   except
     on E: Exception do
     begin
       Writeln('ERROR: ', E.Message);
+      Writeln('Stack trace: ', E.StackTrace);
       Logger.Error('Error durante la demostración', E);
     end;
   end;
