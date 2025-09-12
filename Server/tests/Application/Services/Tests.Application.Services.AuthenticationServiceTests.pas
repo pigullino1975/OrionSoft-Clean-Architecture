@@ -8,6 +8,8 @@ uses
   OrionSoft.Application.Services.AuthenticationService,
   OrionSoft.Infrastructure.CrossCutting.DI.Container,
   OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository,
+  OrionSoft.Core.Interfaces.Repositories.IUserRepository,
+  OrionSoft.Core.Interfaces.Services.ILogger,
   Tests.Mocks.MockLogger,
   Tests.TestBase;
 
@@ -47,10 +49,10 @@ begin
   // Setup dependencies
   UserRepo := TInMemoryUserRepository.Create;
   UserRepo.SeedWithTestData;
-  FContainer.RegisterInstance<IUserRepository>(UserRepo);
+  FContainer.RegisterUserRepository(UserRepo);
   
   MockLogger := TMockLogger.Create;
-  FContainer.RegisterInstance<ILogger>(MockLogger);
+  FContainer.RegisterLogger(MockLogger);
   
   FAuthService := TAuthenticationService.Create(FContainer);
 end;

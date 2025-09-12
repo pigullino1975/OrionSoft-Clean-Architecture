@@ -5,7 +5,6 @@ interface
 uses
   DUnitX.TestFramework,
   System.SysUtils,
-  System.DateUtils,
   OrionSoft.Core.Entities.User,
   OrionSoft.Core.Common.Types,
   OrionSoft.Core.Common.Exceptions,
@@ -100,9 +99,9 @@ end;
 function TUserTests.CreateTestUser: TUser;
 begin
   Result := TUser.Create(
-    GenerateRandomId,
-    GenerateRandomString(8),
-    GenerateRandomEmail,
+    'TEST-USER-' + CreateRandomString(6),
+    CreateRandomString(8),
+    CreateRandomEmail,
     'hashed_password_123',
     TUserRole.User
   );
@@ -365,7 +364,8 @@ begin
   // Arrange
   User := CreateTestUser;
   try
-    User.Activate;
+    // El usuario ya está activo por defecto, no necesita activarse
+    Assert.IsTrue(User.IsActive, 'User should be active by default');
     
     // Act & Assert
     Assert.IsTrue(User.CanLogin);
@@ -433,10 +433,11 @@ begin
   // Arrange
   User := CreateTestUser;
   try
-    User.PasswordChangedAt := Now - 100; // 100 days ago
+    // Set password change date to 100 days ago to simulate old password
+    User.PasswordChangedAt := Now - 100;
     
-    // Act & Assert
-    Assert.IsTrue(User.IsPasswordExpired(90));
+    // Act & Assert - password older than 90 days should be expired
+    Assert.IsTrue(User.IsPasswordExpired(90), 'Password should be expired after 90 days');
     
   finally
     User.Free;

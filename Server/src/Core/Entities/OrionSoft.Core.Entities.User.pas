@@ -64,6 +64,9 @@ type
     procedure Unblock;
     procedure ResetPassword(const NewPasswordHash: string);
     
+    // Clonación para isolamento de capas (Clean Architecture)
+    function Clone: TUser;
+    
     // Properties
     property Id: string read FId;
     property UserName: string read FUserName;
@@ -170,7 +173,7 @@ function TUser.CanLogin: Boolean;
 begin
   Result := FIsActive and 
             not FIsBlocked and 
-            (FBlockedUntil = 0) or (Now >= FBlockedUntil);
+            ((FBlockedUntil = 0) or (Now >= FBlockedUntil));
 end;
 
 procedure TUser.RecordSuccessfulLogin;
@@ -185,7 +188,10 @@ end;
 
 procedure TUser.RecordFailedLogin(MaxAttempts: Integer; BlockDurationMinutes: Integer);
 begin
-  Inc(FFailedLoginAttempts);
+  // Solo incrementar si no está ya bloqueado y no ha excedido el máximo
+  if not FIsBlocked and (FFailedLoginAttempts < MaxAttempts) then
+    Inc(FFailedLoginAttempts);
+    
   FLastFailedLoginAt := Now;
   FUpdatedAt := Now;
   
@@ -345,6 +351,24 @@ end;
 procedure TUser.Unblock;
 begin
   UnblockUser;
+end;
+
+function TUser.Clone: TUser;
+begin
+  Result := TUser.Create(FId, FUserName, FEmail, FPasswordHash, FRole);
+  
+  // Copiar todos los campos
+  Result.FFirstName := FFirstName;
+  Result.FLastName := FLastName;
+  Result.FIsActive := FIsActive;
+  Result.FIsBlocked := FIsBlocked;
+  Result.FFailedLoginAttempts := FFailedLoginAttempts;
+  Result.FLastLoginAt := FLastLoginAt;
+  Result.FLastFailedLoginAt := FLastFailedLoginAt;
+  Result.FCreatedAt := FCreatedAt;
+  Result.FUpdatedAt := FUpdatedAt;
+  Result.FBlockedUntil := FBlockedUntil;
+  Result.FPasswordChangedAt := FPasswordChangedAt;
 end;
 
 end.

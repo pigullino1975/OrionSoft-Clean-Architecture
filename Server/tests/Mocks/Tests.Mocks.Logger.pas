@@ -1,6 +1,8 @@
 unit Tests.Mocks.Logger;
 
-{$INCLUDE '..\..\..\src\Core\Common\OrionSoft.Core.Common.Compiler.inc'}
+{*
+  Mock implementation de ILogger para testing
+*}
 
 interface
 

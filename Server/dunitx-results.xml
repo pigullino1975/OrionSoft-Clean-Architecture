@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<test-results name="C:\Warp Projects\Orionsoft Gestion\OrionSoft.Clean\Server\OrionSoftServerTests.exe" total="36" errors="11" failures="0" ignored="0" inconclusive="0" not-run="0" skipped="0" invalid="0" date="2025-09-12" time="0.054">
+  <culture-info current-culture="en" current-uiculture="en" />
+  <test-suite type="Assembly" name="OrionSoftServerTests.exe" executed="true" result="Failure" success="False" time="0.054" asserts="0">
+    <results>
+        <test-suite type="Namespace" name="Tests" executed="true" result="Success" success="True" time="0.054" asserts="0" >
+          <results>
+              <test-suite type="Fixture" name="TAuthenticationServiceTests" executed="True" result="Success" success="True" time="0.000" >
+                <results>
+                  <test-case name="TestLogin_ValidCredentials_ShouldSucceed" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                  <test-case name="TestLogin_InvalidCredentials_ShouldFail" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                </results>
+              </test-suite>
+              <test-suite type="Namespace" name="Core" executed="true" result="Success" success="True" time="0.053" asserts="0" >
+                <results>
+                    <test-suite type="Fixture" name="TUserTests" executed="True" result="Success" success="True" time="0.042" >
+                      <results>
+                        <test-case name="TestUserCreation_WithValidData_ShouldSucceed" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestUserCreation_WithEmptyId_ShouldRaiseException" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestUserCreation_WithEmptyUserName_ShouldRaiseException" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestUserCreation_WithEmptyEmail_ShouldRaiseException" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestUserCreation_WithInvalidEmail_ShouldRaiseException" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestChangePassword_WithValidHash_ShouldUpdatePassword" executed="True" result="Success" success="True" time="0.015" asserts="0" />
+                        <test-case name="TestRecordFailedLogin_ShouldIncrementAttempts" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestRecordFailedLogin_ExceedsMax_ShouldBlockUser" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestRecordSuccessfulLogin_ShouldResetAttempts" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestActivate_ShouldSetUserActive" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestDeactivate_ShouldSetUserInactive" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestBlock_ShouldBlockUser" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestUnblock_ShouldUnblockUser" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestCanLogin_ActiveUser_ShouldReturnTrue" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestCanLogin_InactiveUser_ShouldReturnFalse" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestCanLogin_BlockedUser_ShouldReturnFalse" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestIsPasswordExpired_RecentPassword_ShouldReturnFalse" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestIsPasswordExpired_OldPassword_ShouldReturnTrue" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestPromoteToRole_ShouldUpdateRole" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                        <test-case name="TestDegradeRole_ShouldUpdateRole" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                      </results>
+                    </test-suite>
+                    <test-suite type="Fixture" name="TAuthenticateUserUseCaseTests" executed="True" result="Success" success="True" time="0.011" >
+                      <results>
+                        <test-case name="TestExecute_ValidCredentials_ShouldReturnSuccess" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_InvalidCredentials_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_NonExistentUser_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_EmptyUserName_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_EmptyPassword_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_InactiveUser_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_BlockedUser_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.002" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_ExpiredPassword_ShouldReturnFailure" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_MultipleFailedAttempts_ShouldBlockUser" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestExecute_SuccessfulLogin_ShouldResetFailedAttempts" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                        <test-case name="TestSimple_ShouldNotCrash" executed="True" result="Error" success="False" time="0.000" asserts="0" >
+                          <failure>
+                            <message>
+                              <![CDATA[ Invalid pointer operation ]]>
+                            </message>
+                            <stack-trace>
+                              <![CDATA[  ]]>
+                            </stack-trace>
+                          </failure>
+                        </test-case>
+                      </results>
+                    </test-suite>
+                </results>
+              </test-suite>
+              <test-suite type="Fixture" name="TInMemoryUserRepositoryTests" executed="True" result="Success" success="True" time="0.000" >
+                <results>
+                  <test-case name="TestSave_NewUser_ShouldSucceed" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                  <test-case name="TestGetByUserName_ExistingUser_ShouldReturnUser" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                  <test-case name="TestGetByUserName_NonExistentUser_ShouldReturnNil" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                </results>
+              </test-suite>
+          </results>
+        </test-suite>
+    </results>
+  </test-suite>
+</test-results>

@@ -141,7 +141,7 @@ begin
       Result := TAuthenticateUserResponse.CreateFailure('Invalid credentials', ERROR_AUTHENTICATION_FAILED);
       LogAuthenticationAttempt(Request.UserName, False, 'User not found');
       
-      // Log para auditoría pero sin revelar que el usuario no existe
+      // Log para auditoria pero sin revelar que el usuario no existe
       FLogger.Warning('Login attempt for non-existent user: ' + Request.UserName, Context);
       Exit;
     end;
@@ -192,19 +192,16 @@ begin
       User.RecordSuccessfulLogin;
       FUserRepository.Save(User);
       
-      Result := TAuthenticateUserResponse.CreateSuccess(User, SessionId);
+      // Devolver una copia del usuario para evitar compartir referencias entre capas
+      Result := TAuthenticateUserResponse.CreateSuccess(User.Clone, SessionId);
       LogAuthenticationAttempt(Request.UserName, True, Format('Session: %s, Role: %s', [SessionId, UserRoleToString(User.Role)]));
       
       FLogger.Info(Format('Usuario %s autenticado exitosamente. SessionId: %s', [Request.UserName, SessionId]), Context);
       
-    except
-      on E: Exception do
-      begin
-        Result := TAuthenticateUserResponse.CreateFailure('Authentication error', ERROR_AUTHENTICATION_FAILED);
-        FLogger.Error('Error during authentication process', E, Context);
+    finally
+      // CRITICAL: Liberar el objeto User obtenido del repositorio siempre
+      if Assigned(User) then
         User.Free;
-        raise;
-      end;
     end;
     
   except

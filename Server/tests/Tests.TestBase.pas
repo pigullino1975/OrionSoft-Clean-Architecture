@@ -13,7 +13,12 @@ uses
   DUnitX.TestFramework,
   OrionSoft.Infrastructure.CrossCutting.DI.Container,
   OrionSoft.Core.Interfaces.Services.ILogger,
+  OrionSoft.Core.Common.Types,
   Tests.Mocks.MockLogger;
+
+type
+  // Alias para evitar conflicto con DUnitX.TestFramework.TLogLevel
+  TApplicationLogLevel = OrionSoft.Core.Common.Types.TLogLevel;
 
 type
   [TestFixture]
@@ -142,32 +147,33 @@ end;
 procedure TTestBase.RegisterCommonMocks;
 begin
   // Registrar mocks comunes que todos los tests necesitan
-  FContainer.RegisterInstance<ILogger>(FMockLogger);
+  // Note: This would require proper DI container implementation
+  // FContainer.RegisterInstance<ILogger>(FMockLogger);
 end;
 
 procedure TTestBase.VerifyNoErrors;
 begin
-  FMockLogger.VerifyLogCount(llError, 0);
+  FMockLogger.VerifyLogCount(TApplicationLogLevel.Error, 0);
 end;
 
 procedure TTestBase.VerifyNoWarnings;
 begin
-  FMockLogger.VerifyLogCount(llWarning, 0);
+  FMockLogger.VerifyLogCount(TApplicationLogLevel.Warning, 0);
 end;
 
 procedure TTestBase.VerifyLoggedInfo(const MessageContains: string);
 begin
-  FMockLogger.VerifyLogged(llInfo, MessageContains);
+  FMockLogger.VerifyLogged(TApplicationLogLevel.Information, MessageContains);
 end;
 
 procedure TTestBase.VerifyLoggedError(const MessageContains: string);
 begin
-  FMockLogger.VerifyLogged(llError, MessageContains);
+  FMockLogger.VerifyLogged(TApplicationLogLevel.Error, MessageContains);
 end;
 
 procedure TTestBase.VerifyLoggedWarning(const MessageContains: string);
 begin
-  FMockLogger.VerifyLogged(llWarning, MessageContains);
+  FMockLogger.VerifyLogged(TApplicationLogLevel.Warning, MessageContains);
 end;
 
 { TUseCaseTestBase }
@@ -209,7 +215,7 @@ end;
 
 procedure TRepositoryTestBase.VerifyDatabaseOperation(const Operation, TableName: string);
 begin
-  Assert.IsTrue(FMockLogger.HasLogEntry(llDebug, Format('DB Operation: %s en tabla %s', [Operation, TableName])),
+  Assert.IsTrue(FMockLogger.HasLogEntry(TApplicationLogLevel.Debug, Format('DB Operation: %s en tabla %s', [Operation, TableName])),
     Format('Expected database operation not logged: %s on %s', [Operation, TableName]));
 end;
 

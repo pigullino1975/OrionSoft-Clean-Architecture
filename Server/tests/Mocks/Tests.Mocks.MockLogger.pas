@@ -62,6 +62,11 @@ type
     procedure Critical(const Message: string; const Context: TLogContext); overload;
     procedure Critical(const Message: string; E: Exception); overload;
     
+    procedure Fatal(const Message: string); overload;
+    procedure Fatal(const Message: string; const Args: array of const); overload;
+    procedure Fatal(const Message: string; const Context: TLogContext); overload;
+    procedure Fatal(const Message: string; E: Exception); overload;
+    
     procedure LogAuthentication(const UserName: string; Success: Boolean; const SessionId: string = '');
     procedure LogBusinessRule(const RuleName, EntityType, EntityId: string; Success: Boolean; const Details: string = '');
     procedure LogPerformance(const Operation: string; DurationMs: Integer; const Details: string = '');
@@ -76,8 +81,8 @@ type
     
     // Testing helpers
     procedure Clear;
-    function GetLogCount: Integer;
-    function GetLogCount(Level: TLogLevel): Integer;
+    function GetLogCount: Integer; overload;
+    function GetLogCount(Level: TLogLevel): Integer; overload;
     function GetLogEntries: TArray<TLogEntry>;
     function GetLastLogEntry: TLogEntry;
     function HasLogEntry(Level: TLogLevel; const MessageContains: string): Boolean;
@@ -117,7 +122,7 @@ end;
 constructor TMockLogger.Create;
 begin
   FLogEntries := TList<TLogEntry>.Create;
-  FLogLevel := llDebug; // Log everything for testing
+  FLogLevel := TLogLevel.Debug; // Log everything for testing
 end;
 
 destructor TMockLogger.Destroy;
@@ -138,8 +143,8 @@ end;
 
 procedure TMockLogger.Debug(const Message: string; const Context: TLogContext);
 begin
-  if FLogLevel <= llDebug then
-    FLogEntries.Add(TLogEntry.Create(llDebug, Message, Context));
+  if FLogLevel <= TLogLevel.Debug then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Debug, Message, Context));
 end;
 
 procedure TMockLogger.Info(const Message: string);
@@ -154,8 +159,8 @@ end;
 
 procedure TMockLogger.Info(const Message: string; const Context: TLogContext);
 begin
-  if FLogLevel <= llInfo then
-    FLogEntries.Add(TLogEntry.Create(llInfo, Message, Context));
+  if FLogLevel <= TLogLevel.Information then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Information, Message, Context));
 end;
 
 procedure TMockLogger.Warning(const Message: string);
@@ -170,8 +175,8 @@ end;
 
 procedure TMockLogger.Warning(const Message: string; const Context: TLogContext);
 begin
-  if FLogLevel <= llWarning then
-    FLogEntries.Add(TLogEntry.Create(llWarning, Message, Context));
+  if FLogLevel <= TLogLevel.Warning then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Warning, Message, Context));
 end;
 
 procedure TMockLogger.Error(const Message: string);
@@ -186,8 +191,8 @@ end;
 
 procedure TMockLogger.Error(const Message: string; const Context: TLogContext);
 begin
-  if FLogLevel <= llError then
-    FLogEntries.Add(TLogEntry.Create(llError, Message, Context));
+  if FLogLevel <= TLogLevel.Error then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Error, Message, Context));
 end;
 
 procedure TMockLogger.Error(const Message: string; E: Exception);
@@ -197,8 +202,8 @@ end;
 
 procedure TMockLogger.Error(const Message: string; E: Exception; const Context: TLogContext);
 begin
-  if FLogLevel <= llError then
-    FLogEntries.Add(TLogEntry.Create(llError, Message, Context, E));
+  if FLogLevel <= TLogLevel.Error then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Error, Message, Context, E));
 end;
 
 procedure TMockLogger.Critical(const Message: string);
@@ -213,14 +218,37 @@ end;
 
 procedure TMockLogger.Critical(const Message: string; const Context: TLogContext);
 begin
-  if FLogLevel <= llCritical then
-    FLogEntries.Add(TLogEntry.Create(llCritical, Message, Context));
+  if FLogLevel <= TLogLevel.Fatal then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Fatal, Message, Context));
 end;
 
 procedure TMockLogger.Critical(const Message: string; E: Exception);
 begin
-  if FLogLevel <= llCritical then
-    FLogEntries.Add(TLogEntry.Create(llCritical, Message, Default(TLogContext), E));
+  if FLogLevel <= TLogLevel.Fatal then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Fatal, Message, Default(TLogContext), E));
+end;
+
+// Fatal methods implementation
+procedure TMockLogger.Fatal(const Message: string);
+begin
+  Fatal(Message, Default(TLogContext));
+end;
+
+procedure TMockLogger.Fatal(const Message: string; const Args: array of const);
+begin
+  Fatal(Format(Message, Args));
+end;
+
+procedure TMockLogger.Fatal(const Message: string; const Context: TLogContext);
+begin
+  if FLogLevel <= TLogLevel.Fatal then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Fatal, Message, Context));
+end;
+
+procedure TMockLogger.Fatal(const Message: string; E: Exception);
+begin
+  if FLogLevel <= TLogLevel.Fatal then
+    FLogEntries.Add(TLogEntry.Create(TLogLevel.Fatal, Message, Default(TLogContext), E));
 end;
 
 procedure TMockLogger.LogAuthentication(const UserName: string; Success: Boolean; const SessionId: string);
@@ -243,12 +271,12 @@ begin
   if Success then
   begin
     Message := Format('Regla de negocio %s aplicada exitosamente para %s (ID: %s)', [RuleName, EntityType, EntityId]);
-    Level := llInfo;
+    Level := TLogLevel.Information;
   end
   else
   begin
     Message := Format('Regla de negocio %s falló para %s (ID: %s). Detalles: %s', [RuleName, EntityType, EntityId, Details]);
-    Level := llWarning;
+    Level := TLogLevel.Warning;
   end;
   
   if FLogLevel <= Level then
@@ -354,7 +382,7 @@ begin
   Result := False;
   for Entry in FLogEntries do
   begin
-    if (Entry.Level = llError) and ContainsText(Entry.Exception, ExceptionMessage) then
+    if (Entry.Level = TLogLevel.Error) and ContainsText(Entry.Exception, ExceptionMessage) then
     begin
       Result := True;
       Break;

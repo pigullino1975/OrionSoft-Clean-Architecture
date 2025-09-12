@@ -8,9 +8,13 @@ uses
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
   DUnitX.TestFramework,
-  // Test Base and Mocks
+  
+  // Test Base and Mocks (existing files)
   Tests.TestBase in 'tests\Tests.TestBase.pas',
   Tests.Mocks.MockLogger in 'tests\Mocks\Tests.Mocks.MockLogger.pas',
+  Tests.Mocks.UserRepository in 'tests\Mocks\Tests.Mocks.UserRepository.pas',
+  Tests.Mocks.DbConnection in 'tests\Mocks\Tests.Mocks.DbConnection.pas',
+  
   // Core Units (required by tests)
   OrionSoft.Core.Common.Types in 'src\Core\Common\OrionSoft.Core.Common.Types.pas',
   OrionSoft.Core.Common.Exceptions in 'src\Core\Common\OrionSoft.Core.Common.Exceptions.pas',
@@ -18,17 +22,31 @@ uses
   OrionSoft.Core.Interfaces.Services.ILogger in 'src\Core\Interfaces\Services\OrionSoft.Core.Interfaces.Services.ILogger.pas',
   OrionSoft.Core.Interfaces.Repositories.IUserRepository in 'src\Core\Interfaces\Repositories\OrionSoft.Core.Interfaces.Repositories.IUserRepository.pas',
   OrionSoft.Core.UseCases.Authentication.AuthenticateUserUseCase in 'src\Core\UseCases\Authentication\OrionSoft.Core.UseCases.Authentication.AuthenticateUserUseCase.pas',
+  
   // Application Layer
   OrionSoft.Application.Services.AuthenticationService in 'src\Application\Services\OrionSoft.Application.Services.AuthenticationService.pas',
+  // OrionSoft.Application.Services.RemObjects.LoginServiceAdapter in 'src\Application\Services\RemObjects\OrionSoft.Application.Services.RemObjects.LoginServiceAdapter.pas',
+  
   // Infrastructure Layer
   OrionSoft.Infrastructure.CrossCutting.DI.Container in 'src\Infrastructure\CrossCutting\DI\OrionSoft.Infrastructure.CrossCutting.DI.Container.pas',
   OrionSoft.Infrastructure.Services.FileLogger in 'src\Infrastructure\Services\OrionSoft.Infrastructure.Services.FileLogger.pas',
   OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository in 'src\Infrastructure\Data\Repositories\OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository.pas',
-  // Test Units
+  // OrionSoft.Infrastructure.Data.Repositories.SqlUserRepository in 'src\Infrastructure\Data\Repositories\OrionSoft.Infrastructure.Data.Repositories.SqlUserRepository.pas',
+  OrionSoft.Infrastructure.Data.Context.IDbConnection in 'src\Infrastructure\Data\Context\OrionSoft.Infrastructure.Data.Context.IDbConnection.pas',
+  
+  // Existing Unit Test Units
   Tests.Core.Entities.UserTests in 'tests\Core\Entities\Tests.Core.Entities.UserTests.pas',
   Tests.Core.UseCases.AuthenticateUserUseCaseTests in 'tests\Core\UseCases\Tests.Core.UseCases.AuthenticateUserUseCaseTests.pas',
   Tests.Application.Services.AuthenticationServiceTests in 'tests\Application\Services\Tests.Application.Services.AuthenticationServiceTests.pas',
-  Tests.Infrastructure.Data.InMemoryUserRepositoryTests in 'tests\Infrastructure\Data\Tests.Infrastructure.Data.InMemoryUserRepositoryTests.pas';
+  Tests.Infrastructure.Data.InMemoryUserRepositoryTests in 'tests\Infrastructure\Data\Tests.Infrastructure.Data.InMemoryUserRepositoryTests.pas'
+  
+  // New Comprehensive Test Units (commented out until dependencies are resolved)
+  // Tests.Infrastructure.Data.SqlUserRepository in 'tests\Unit\Tests.Infrastructure.Data.SqlUserRepository.pas',
+  // Tests.Application.Services.RemObjectsAdapter in 'tests\Unit\Tests.Application.Services.RemObjectsAdapter.pas',
+  // Tests.Integration.Authentication.EndToEnd in 'tests\Integration\Tests.Integration.Authentication.EndToEnd.pas',
+  // Tests.Integration.Performance.Stress in 'tests\Integration\Tests.Integration.Performance.Stress.pas',
+  // Tests.Integration.Legacy.Compatibility in 'tests\Integration\Tests.Integration.Legacy.Compatibility.pas'
+  ;
 
 var
   runner : ITestRunner;

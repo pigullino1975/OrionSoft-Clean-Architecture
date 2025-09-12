@@ -54,7 +54,7 @@ var
 begin
   // Arrange
   User := TUser.Create(
-    GenerateRandomId,
+    'TEST-USER-1',
     'testuser',
     'test@example.com',
     'hashedpass',
@@ -67,7 +67,7 @@ begin
     
     // Assert
     Assert.IsTrue(Result);
-    Assert.IsTrue(FRepository.Exists(User.Id));
+    Assert.IsTrue(FRepository.ExistsById(User.Id));
   finally
     User.Free;
   end;
@@ -79,7 +79,7 @@ var
 begin
   // Arrange
   User := TUser.Create(
-    GenerateRandomId,
+    'TEST-USER-2',
     'testuser',
     'test@example.com',
     'hashedpass',

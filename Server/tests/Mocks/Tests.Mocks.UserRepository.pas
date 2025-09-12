@@ -266,14 +266,15 @@ begin
   ExistingUser := GetById(User.Id);
   if Assigned(ExistingUser) then
   begin
-    // Update existing
-    ExistingUser.UserName := User.UserName;
-    ExistingUser.Email := User.Email;
-    ExistingUser.PasswordHash := User.PasswordHash;
+    // Update existing - use entity methods to maintain business rules
+    // Note: UserName cannot be changed per business rules
+    if ExistingUser.Email <> User.Email then
+      ExistingUser.UpdateProfile(User.FirstName, User.LastName, User.Email);
+    if ExistingUser.PasswordHash <> User.PasswordHash then
+      ExistingUser.ChangePassword(User.PasswordHash);
     ExistingUser.FirstName := User.FirstName;
     ExistingUser.LastName := User.LastName;
     ExistingUser.IsActive := User.IsActive;
-    ExistingUser.UpdatedAt := Now;
   end
   else
   begin

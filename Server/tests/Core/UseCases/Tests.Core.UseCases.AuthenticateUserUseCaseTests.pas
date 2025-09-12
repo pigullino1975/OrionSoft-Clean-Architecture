@@ -10,6 +10,7 @@ uses
   OrionSoft.Core.Entities.User,
   OrionSoft.Core.Common.Types,
   OrionSoft.Core.Common.Exceptions,
+  OrionSoft.Core.Interfaces.Services.ILogger,
   OrionSoft.Infrastructure.Data.Repositories.InMemoryUserRepository,
   Tests.Mocks.MockLogger,
   Tests.TestBase;
@@ -19,7 +20,8 @@ type
   TAuthenticateUserUseCaseTests = class(TTestBase)
   private
     FUserRepository: TInMemoryUserRepository;
-    FMockLogger: TMockLogger;
+    FMockLoggerObject: TMockLogger;  // Mantener referencia al objeto concreto
+    FMockLogger: ILogger;            // Interfaz para pasar al UseCase  
     FSystemConfig: TSystemConfig;
     FUseCase: TAuthenticateUserUseCase;
     
@@ -61,6 +63,9 @@ type
     
     [Test]
     procedure TestExecute_SuccessfulLogin_ShouldResetFailedAttempts;
+    
+    [Test]
+    procedure TestSimple_ShouldNotCrash;
   end;
 
 implementation
@@ -72,7 +77,8 @@ begin
   inherited Setup;
   
   FUserRepository := TInMemoryUserRepository.Create;
-  FMockLogger := TMockLogger.Create;
+  FMockLoggerObject := TMockLogger.Create;
+  FMockLogger := FMockLoggerObject;  // Asignar la interfaz
   
   // Configure system settings
   FSystemConfig.MaxLoginAttempts := 3;
@@ -89,9 +95,27 @@ end;
 
 procedure TAuthenticateUserUseCaseTests.TearDown;
 begin
-  FUseCase.Free;
-  FUserRepository.Free;
-  FMockLogger.Free;
+  // Liberar en orden inverso al de creación para evitar referencias colgantes
+  if Assigned(FUseCase) then
+  begin
+    FUseCase.Free;
+    FUseCase := nil;
+  end;
+  
+  if Assigned(FUserRepository) then
+  begin
+    FUserRepository.Free;
+    FUserRepository := nil;
+  end;
+  
+  // Primero liberar la interfaz, luego el objeto
+  FMockLogger := nil;
+  if Assigned(FMockLoggerObject) then
+  begin
+    FMockLoggerObject.Free;
+    FMockLoggerObject := nil;
+  end;
+  
   inherited TearDown;
 end;
 
@@ -102,7 +126,7 @@ var
 begin
   PasswordHash := HashPassword(Password);
   User := TUser.Create(
-    GenerateRandomId,
+    'TEST-USER-' + UserName + '-ID',
     UserName,
     UserName + '@test.com',
     PasswordHash,
@@ -147,8 +171,8 @@ begin
     Assert.IsEmpty(Response.ErrorMessage);
     
     // Verify logging
-    Assert.IsTrue(FMockLogger.HasInfoEntry('Iniciando proceso de autenticación para usuario: testuser'));
-    Assert.IsTrue(FMockLogger.HasInfoEntry('Usuario testuser autenticado exitosamente'));
+    Assert.IsTrue(FMockLoggerObject.HasLogEntry(TLogLevel.Information, 'Iniciando proceso de autenticación para usuario: testuser'));
+    Assert.IsTrue(FMockLoggerObject.HasLogEntry(TLogLevel.Information, 'Usuario testuser autenticado exitosamente'));
   finally
     Response.Free;
   end;
@@ -175,7 +199,7 @@ begin
     Assert.AreEqual(ERROR_INVALID_CREDENTIALS, Response.ErrorCode);
     
     // Verify logging
-    Assert.IsTrue(FMockLogger.HasWarningEntry('Failed authentication for user testuser'));
+    Assert.IsTrue(FMockLoggerObject.HasLogEntry(TLogLevel.Warning, 'Failed authentication for user testuser'));
   finally
     Response.Free;
   end;
@@ -200,7 +224,7 @@ begin
     Assert.AreEqual(ERROR_AUTHENTICATION_FAILED, Response.ErrorCode);
     
     // Verify logging - should not reveal user doesn't exist
-    Assert.IsTrue(FMockLogger.HasWarningEntry('Login attempt for non-existent user: nonexistent'));
+    Assert.IsTrue(FMockLoggerObject.HasLogEntry(TLogLevel.Warning, 'Login attempt for non-existent user: nonexistent'));
   finally
     Response.Free;
   end;
@@ -217,14 +241,11 @@ begin
   // Act
   Response := FUseCase.Execute(Request);
   
-  // Assert
-  try
-    Assert.IsFalse(Response.Success, 'Authentication should fail with empty username');
-    Assert.AreEqual('Invalid request parameters', Response.ErrorMessage);
-    Assert.AreEqual(ERROR_VALIDATION_FAILED, Response.ErrorCode);
-  finally
-    Response.Free;
-  end;
+  // Assert - TESTING WITHOUT Response.Free to isolate problem
+  Assert.IsFalse(Response.Success, 'Authentication should fail with empty username');
+  Assert.AreEqual('Invalid request parameters', Response.ErrorMessage);
+  Assert.AreEqual(ERROR_VALIDATION_FAILED, Response.ErrorCode);
+  // NOTE: Not calling Response.Free to test if that's the source of the problem
 end;
 
 procedure TAuthenticateUserUseCaseTests.TestExecute_EmptyPassword_ShouldReturnFailure;
@@ -414,6 +435,18 @@ begin
   finally
     Response.Free;
   end;
+end;
+
+procedure TAuthenticateUserUseCaseTests.TestSimple_ShouldNotCrash;
+begin
+  // Test absolutamente mínimo - si esto falla, el problema está en Setup/TearDown
+  Assert.IsTrue(True, 'Basic assertion should pass');
+  
+  // Test que los objetos fueron creados correctamente
+  Assert.IsNotNull(FUserRepository, 'UserRepository should be created');
+  Assert.IsNotNull(FMockLoggerObject, 'MockLogger should be created');
+  Assert.IsNotNull(FMockLogger, 'MockLogger interface should be assigned');
+  Assert.IsNotNull(FUseCase, 'UseCase should be created');
 end;
 
 end.
